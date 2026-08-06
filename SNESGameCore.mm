@@ -889,7 +889,7 @@ NSString *SNESEmulatorKeys[] = { @"Up", @"Down", @"Left", @"Right", @"A", @"B", 
 
     // Convert cheat search codes to patch format (address:value).
     // SNES9x strips colons below when applying, so colon-separated format works.
-    if ([type isEqual:OECheatCodeTypeCheatSearch])
+    if ([type isEqual:OECheatCodeTypeCheatSearch] || [type isEqual:OECheatCodeTypeUnknown])
         code = [OECheatCodeUtilities convertCheatSearchCodeToPatch:code addressWidth:6 minDataBytes:1];
 
     if (enabled)

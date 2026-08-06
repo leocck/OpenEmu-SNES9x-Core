@@ -881,7 +881,7 @@ NSString *SNESEmulatorKeys[] = { @"Up", @"Down", @"Left", @"Right", @"A", @"B", 
 /// - Strips leading zeros from address if it contains a colon and address > 6 hex digits
 /// - Splits multi-byte values into individual single-byte PAR codes (little-endian)
 /// Example: 007F0132:270F -> 7F0132:0F+7F0133:27
-- (NSString *)convertCheatRawCode:(NSString *)code
+- (NSString *)convertCheatRawCodeToPAR:(NSString *)code
 {
     NSRange colonRange = [code rangeOfString:@":"];
     if (colonRange.location == NSNotFound) {
@@ -924,7 +924,7 @@ NSString *SNESEmulatorKeys[] = { @"Up", @"Down", @"Left", @"Right", @"A", @"B", 
     code = [code stringByReplacingOccurrencesOfString:@" " withString:@""];
 
     // Convert cheat-search format to PAR-compatible format
-    code = [self convertCheatRawCode:code];
+    code = [self convertCheatRawCodeToPAR:code];
 
     if (enabled)
         _cheatList[code] = @YES;

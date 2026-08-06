@@ -887,10 +887,10 @@ NSString *SNESEmulatorKeys[] = { @"Up", @"Down", @"Left", @"Right", @"A", @"B", 
     // Remove any spaces
     code = [code stringByReplacingOccurrencesOfString:@" " withString:@""];
 
-    // Convert cheat search codes (address:value) to PAR format.
-    // Other types (Action Replay, Game Genie, etc.) are already in their native format.
+    // Convert cheat search codes to patch format (address:value).
+    // SNES9x strips colons below when applying, so colon-separated format works.
     if ([type isEqual:OECheatCodeTypeCheatSearch])
-        code = [OECheatCodeUtilities convertCheatSearchCodeToPAR:code];
+        code = [OECheatCodeUtilities convertCheatSearchCodeToPatch:code addressWidth:6 minDataBytes:1];
 
     if (enabled)
         _cheatList[code] = @YES;

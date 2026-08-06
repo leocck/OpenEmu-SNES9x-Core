@@ -912,8 +912,10 @@ NSString *SNESEmulatorKeys[] = { @"Up", @"Down", @"Left", @"Right", @"A", @"B", 
                 // Sanitize for PAR codes that might contain colons
                 const char *cheatCode = [singleCode stringByReplacingOccurrencesOfString:@":" withString:@""].UTF8String;
 
+                uint32 sizeBefore = Cheat.group.size();
                 S9xAddCheatGroup("OpenEmu", cheatCode);
-                S9xEnableCheatGroup(Cheat.group.size() - 1);
+                if (Cheat.group.size() > sizeBefore)
+                    S9xEnableCheatGroup(Cheat.group.size() - 1);
             }
         }
     }

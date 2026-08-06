@@ -27,6 +27,7 @@
 
 #import "SNESGameCore.h"
 #import <OpenEmuBase/OERingBuffer.h>
+#import <OpenEmuBase/OEMemoryRegionDescriptor.h>
 #import <OpenGL/gl.h>
 
 #include "snes9x.h"
@@ -876,6 +877,44 @@ NSString *SNESEmulatorKeys[] = { @"Up", @"Down", @"Left", @"Right", @"A", @"B", 
 
 #pragma mark - Cheats
 
+/// Converts a cheat-search format code (ADDRESS:VALUE) into PAR-compatible codes.
+/// - Strips leading zeros from address if it contains a colon and address > 6 hex digits
+/// - Splits multi-byte values into individual single-byte PAR codes (little-endian)
+/// Example: 007F0132:270F -> 7F0132:0F+7F0133:27
+- (NSString *)convertCheatRawCode:(NSString *)code
+{
+    NSRange colonRange = [code rangeOfString:@":"];
+    if (colonRange.location == NSNotFound) {
+        return code;
+    }
+
+    NSString *addressPart = [code substringToIndex:colonRange.location];
+    NSString *valuePart = [code substringFromIndex:colonRange.location + 1];
+
+    // Strip leading zeros down to 6 digits if address is longer
+    while (addressPart.length > 6 && [addressPart hasPrefix:@"0"]) {
+        addressPart = [addressPart substringFromIndex:1];
+    }
+
+    // Determine byte count from value hex string length
+    NSUInteger byteCount = (valuePart.length + 1) / 2;
+    if (byteCount <= 1) {
+        // Single byte: return address (possibly trimmed) with value
+        return [NSString stringWithFormat:@"%@:%@", addressPart, valuePart];
+    }
+
+    // Multi-byte: split into individual PAR codes (little-endian byte order)
+    unsigned long long address = strtoull(addressPart.UTF8String, NULL, 16);
+    unsigned long long value = strtoull(valuePart.UTF8String, NULL, 16);
+    NSMutableArray<NSString *> *codes = [NSMutableArray arrayWithCapacity:byteCount];
+    for (NSUInteger i = 0; i < byteCount; i++) {
+        uint8_t byte = (value >> (i * 8)) & 0xFF;
+        NSString *singleCode = [NSString stringWithFormat:@"%06llX:%02X", address + i, byte];
+        [codes addObject:singleCode];
+    }
+    return [codes componentsJoinedByString:@"+"];
+}
+
 - (void)setCheat:(NSString *)code setType:(NSString *)type setEnabled:(BOOL)enabled
 {
     // Sanitize
@@ -883,6 +922,9 @@ NSString *SNESEmulatorKeys[] = { @"Up", @"Down", @"Left", @"Right", @"A", @"B", 
 
     // Remove any spaces
     code = [code stringByReplacingOccurrencesOfString:@" " withString:@""];
+
+    // Convert cheat-search format to PAR-compatible format
+    code = [self convertCheatRawCode:code];
 
     if (enabled)
         _cheatList[code] = @YES;
@@ -1037,6 +1079,18 @@ void S9xParseArg(char**, int&, int)
 
 void S9xParsePortConfig(ConfigFile&, int)
 {
+}
+
+#pragma mark - Memory Regions
+
+- (NSArray<OEMemoryRegionDescriptor *> *)readableMemoryRegions
+{
+	// SNES WRAM: 128KB at CPU address $7E0000-$7FFFFF
+	NSData *data = [NSData dataWithBytes:Memory.RAM length:0x20000];
+	OEMemoryRegionDescriptor *wram = [OEMemoryRegionDescriptor descriptorWithName:@"WRAM"
+	                                                                     address:0x7E0000
+	                                                                        data:data];
+	return @[wram];
 }
 
 @end
